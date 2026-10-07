@@ -1,0 +1,319 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════
+   DEEPSHIELD — design tokens
+
+   Direction: forensic editorial. Near-black plate, warm bone type, and
+   red used only where something is being measured or flagged — never as
+   a brand wash. Primary actions are bone-on-black (inverted), which
+   keeps the one saturated colour meaningful.
+
+   Data-mark colours are inherited from the validated diverging pair and
+   must not be re-picked for looks: authentic ↔ manipulated clears CVD
+   ΔE 16.8 and normal-vision ΔE 31.8 on this plate. Green/red would not.
+   ═══════════════════════════════════════════════════════════════════ */
+@theme {
+  --color-void: var(--c-void);
+  --color-plate: var(--c-plate);
+  --color-raise: var(--c-raise);
+  --color-raise-2: var(--c-raise-2);
+
+  --color-hair: var(--c-hair);
+  --color-hair-2: var(--c-hair-2);
+
+  /* Warm bone, not blue-grey. This single choice does most of the work
+     separating the palette from a default dark theme. */
+  --color-bone: var(--c-bone);
+  --color-bone-2: var(--c-bone-2);
+  --color-bone-3: var(--c-bone-3);
+  --color-bone-hover: var(--c-bone-hover);
+
+  --color-signal: #ff3b2f;
+
+  --color-auth: #159cc0;
+  --color-manip: #ee4059;
+  --color-neutral: #8b939e;
+  --color-warn: #f5a524;
+
+  --font-display: var(--font-serif-display), "Times New Roman", serif;
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Theme palettes ──────────────────────────────────────────────────
+   Colour-blind-validated diverging pair (auth/manip) and the signal
+   red stay fixed across themes. Only the neutral plate + bone scale
+   flips. Dark is the default and matches the original design exactly;
+   light is opted into via [data-theme="light"] on <html>. */
+:root,
+[data-theme="dark"] {
+  --c-void: #08080a;
+  --c-plate: #0d0d10;
+  --c-raise: #141419;
+  --c-raise-2: #1c1c22;
+
+  --c-hair: #ffffff14;
+  --c-hair-2: #ffffff26;
+
+  --c-bone: #ede9e1;
+  --c-bone-2: #a8a29a;
+  --c-bone-3: #6e6a64;
+  --c-bone-hover: #ffffff;
+
+  --grain-opacity: 0.028;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --c-void: #f7f5f1;
+  --c-plate: #ffffff;
+  --c-raise: #f0eee8;
+  --c-raise-2: #e6e2d9;
+
+  --c-hair: #00000014;
+  --c-hair-2: #00000024;
+
+  --c-bone: #1a1917;
+  --c-bone-2: #5c584f;
+  --c-bone-3: #8a8477;
+  --c-bone-hover: #000000;
+
+  --grain-opacity: 0.018;
+  color-scheme: light;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-hair);
+    min-width: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-void);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    transition: background-color 0.35s ease, color 0.35s ease;
+  }
+
+  ::selection {
+    background: var(--color-signal);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-void);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-raise-2);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-hair-2);
+  }
+}
+
+@layer components {
+  /* ── Typography ────────────────────────────────────────────────── */
+
+  /* Editorial display face. Tight tracking and a low line-height are
+     what make large serif type read as designed rather than defaulted. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    line-height: 0.88;
+    letter-spacing: -0.025em;
+  }
+
+  .display-i {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .mono-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--color-bone-3);
+  }
+
+  /* ── Surfaces ──────────────────────────────────────────────────── */
+
+  .hair-t {
+    border-top: 1px solid var(--color-hair);
+  }
+  .hair-b {
+    border-bottom: 1px solid var(--color-hair);
+  }
+
+  /* Near-square panels against pill-shaped buttons — the contrast is
+     the editorial idiom, not an inconsistency. */
+  .panel {
+    background: var(--color-plate);
+    border: 1px solid var(--color-hair);
+    border-radius: 4px;
+  }
+
+  /* ── Controls ──────────────────────────────────────────────────── */
+
+  /* Primary action is inverted, not coloured — it keeps red meaning
+     "flagged" everywhere else on the page. */
+  .btn-bone {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: var(--color-bone);
+    color: var(--color-void);
+    padding: 0.95rem 1.6rem;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    border-radius: 999px;
+    transition: transform 0.4s var(--ease-out-expo), background 0.3s;
+  }
+  .btn-bone:hover {
+    background: var(--color-bone-hover);
+    transform: translateY(-2px);
+  }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: 1px solid var(--color-hair-2);
+    color: var(--color-bone);
+    padding: 0.95rem 1.6rem;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: 999px;
+    transition: border-color 0.3s, background 0.3s, transform 0.4s var(--ease-out-expo);
+  }
+  .btn-ghost:hover {
+    border-color: var(--color-bone-2);
+    background: var(--color-hair);
+    transform: translateY(-2px);
+  }
+
+  /* ── Texture ───────────────────────────────────────────────────── */
+
+  /* Film grain. A flat dark page is the single biggest tell of a
+     template; a little noise gives the plate a surface. */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: -50%;
+    z-index: 100;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain-shift 8s steps(10) infinite;
+  }
+
+  .rule-grid {
+    background-image:
+      linear-gradient(to right, var(--color-hair) 1px, transparent 1px);
+    background-size: 25% 100%;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .edge-fade-x {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 8%,
+      #000 92%,
+      transparent
+    );
+  }
+}
+
+/* ═══ Animation ═══════════════════════════════════════════════════ */
+
+@keyframes grain-shift {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-2%, -3%); }
+  30% { transform: translate(3%, -2%); }
+  50% { transform: translate(-1%, 4%); }
+  70% { transform: translate(2%, 2%); }
+  90% { transform: translate(-3%, 1%); }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee 42s linear infinite;
+}
+
+@keyframes blink {
+  0%, 45% { opacity: 1; }
+  50%, 95% { opacity: 0.25; }
+}
+
+/* Entrance animation, CSS-driven with `both` fill so the resting state
+   is VISIBLE. A JS/observer-gated reveal bakes opacity:0 into the
+   prerendered HTML and leaves content invisible if anything goes wrong. */
+.rise {
+  animation: rise 0.9s var(--ease-out-expo) both;
+}
+
+/* Headline lines wipe up from behind their own edge. Same rule: the
+   animation ends visible, so nothing depends on JS to be readable. */
+.mask-line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.mask-line > span {
+  display: block;
+  animation: mask-rise 1.15s var(--ease-out-expo) both;
+}
+
+@keyframes mask-rise {
+  from { transform: translateY(105%); }
+  to { transform: none; }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,9 @@
+flask==3.0.3
+torch
+torchvision
+open_clip_torch
+insightface
+onnxruntime
+opencv-python-headless
+numpy
+pillow

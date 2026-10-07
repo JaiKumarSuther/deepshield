@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#080c14">
+  <title>Deepfake Video Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script src="/static/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg: #080c14;
+      --bg-2: #0d1320;
+      --panel: #111827;
+      --panel-2: #161f31;
+      --line: #1f2a3d;
+      --line-lit: #2b3850;
+      --ink: #eef2f8;
+      --dim: #94a3b8;
+      --faint: #5b6779;
+      --cyan: #22d3ee;
+      --real: #10b981;
+      --fake: #f43f5e;
+      --warn: #f59e0b;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%
+    }
+
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none
+    }
+
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      padding: 0 clamp(18px, 4vw, 44px);
+      height: 68px;
+      flex: 0 0 68px;
+      background: rgba(8, 12, 20, .86);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line)
+    }
+
+    .logo {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: -.02em;
+      cursor: pointer
+    }
+
+    .logo span {
+      color: var(--cyan)
+    }
+
+    .links {
+      display: flex;
+      gap: 26px;
+      margin-left: 22px;
+      font-size: 14px;
+      color: var(--dim)
+    }
+
+    .links a {
+      transition: color .15s;
+      cursor: pointer;
+      position: relative;
+      padding: 4px 0
+    }
+
+    .links a:hover {
+      color: var(--ink)
+    }
+
+    .links a.on {
+      color: var(--cyan)
+    }
+
+    .links a.on::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      bottom: -10px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--cyan);
+      transform: translateX(-50%)
+    }
+
+    .nav-r {
+      margin-left: auto
+    }
+
+    .cta-sm {
+      background: var(--cyan);
+      color: #04202a;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 9px 20px;
+      border-radius: 8px;
+      border: 0;
+      cursor: pointer;
+      transition: background .15s
+    }
+
+    .cta-sm:hover {
+      background: #67e8f9
+    }
+
+    .burger {
+      display: none;
+      margin-left: auto;
+      background: none;
+      border: 0;
+      color: var(--ink);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 6px
+    }
+
+    @media (max-width: 900px) {
+      .links {
+        position: fixed;
+        top: 68px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        gap: 0;
+        background: var(--bg-2);
+        border-bottom: 1px solid var(--line);
+        margin: 0;
+        display: none
+      }
+
+      .links.open {
+        display: flex
+      }
+
+      .links a {
+        padding: 15px clamp(18px, 4vw, 44px);
+        border-bottom: 1px solid var(--line)
+      }
+
+      .links a.on::after {
+        display: none
+      }
+
+      .nav-r {
+        display: none
+      }
+
+      .burger {
+        display: block
+      }
+    }
+
+    main {
+      flex: 1
+    }
+
+    .view {
+      display: none;
+      animation: fade .28s ease
+    }
+
+    .view.on {
+      display: block
+    }
+
+    @keyframes fade {
+      from {
+        opacity: 0;
+        transform: translateY(6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* ── hero ─────────────────────────────────────────────── */
+    .hero {
+      padding: clamp(44px, 7vw, 92px) clamp(18px, 4vw, 44px) clamp(56px, 9vw, 104px);
+      background: radial-gradient(ellipse 70% 90% at 78% 45%, rgba(34, 211, 238, .13), transparent 62%),
+        radial-gradient(ellipse 60% 70% at 20% 10%, rgba(56, 189, 248, .06), transparent 60%)
+    }
+
+    .hero-in {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      align-items: center
+    }
+
+    @media (min-width: 940px) {
+      .hero-in {
+        grid-template-columns: 1.05fr .95fr
+      }
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      letter-spacing: .06em;
+      color: var(--cyan);
+      background: rgba(34, 211, 238, .08);
+      border: 1px solid rgba(34, 211, 238, .25);
+      border-radius: 100px;
+      padding: 6px 14px;
+      margin-bottom: 26px
+    }
+
+    .pill i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--cyan)
+    }
+
+    h1 {
+      font-size: clamp(38px, 7vw, 70px);
+      font-weight: 800;
+      line-height: 1.04;
+      letter-spacing: -.035em;
+      margin-bottom: 24px
+    }
+
+    h1 em {
+      font-style: normal;
+      color: var(--cyan)
+    }
+
+    .lede {
+      font-size: clamp(15px, 1.9vw, 17.5px);
+      color: var(--dim);
+      max-width: 520px;
+      margin-bottom: 34px
+    }
+
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 42px
+    }
+
+    .btn-1,
+    .btn-2 {
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 30px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: .15s
+    }
+
+    .btn-1 {
+      background: var(--cyan);
+      color: #04202a;
+      border: 0;
+      box-shadow: 0 0 32px rgba(34, 211, 238, .28)
+    }
+
+    .btn-1:hover {
+      background: #67e8f9;
+      box-shadow: 0 0 42px rgba(34, 211, 238, .4)
+    }
+
+    .btn-2 {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line-lit)
+    }
+
+    .btn-2:hover {
+      border-color: var(--cyan);
+      color: var(--cyan)
+    }
+
+    .kpis {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(26px, 5vw, 52px)
+    }
+
+    .kpi-n {
+      font-family: var(--mono);
+      font-size: clamp(22px, 3.4vw, 30px);
+      font-weight: 500;
+      color: var(--cyan);
+      line-height: 1
+    }
+
+    .kpi-l {
+      font-size: 12px;
+      color: var(--faint);
+      margin-top: 7px
+    }
+
+    .art {
+      display: flex;
+      justify-content: center
+    }
+
+    .art svg {
+      width: 100%;
+      max-width: 440px;
+      height: auto
+    }
+
+    @media (max-width: 939px) {
+      .art {
+        order: -1
+      }
+
+      .art svg {
+        max-width: 300px
+      }
+    }
+
+    /* ── page shell ───────────────────────────────────────── */
+    .page {
+      padding: clamp(40px, 6vw, 72px) clamp(18px, 4vw, 44px) clamp(56px, 8vw, 88px)
+    }
+
+    .page-in {
+      max-width: 1240px;
+      margin: 0 auto
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      letter-spacing: .16em;
+      color: var(--cyan);
+      margin-bottom: 12px
+    }
+
+    h2 {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 700;
+      letter-spacing: -.025em;
+      margin-bottom: 14px
+    }
+
+    .sec-lede {
+      color: var(--dim);
+      max-width: 640px;
+      margin-bottom: 44px;
+      font-size: 16px
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 9px
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px
+    }
+
+    @media (min-width: 720px) {
+      .steps {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    @media (min-width: 1080px) {
+      .steps {
+        grid-template-columns: repeat(4, 1fr)
+      }
+    }
+
+    .step {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 26px 22px;
+      transition: border-color .18s
+    }
+
+    .step:hover {
+      border-color: var(--line-lit)
+    }
+
+    .step-n {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--cyan);
+      border: 1px solid rgba(34, 211, 238, .3);
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 18px
+    }
+
+    .step p {
+      font-size: 13.5px;
+      color: var(--faint);
+      line-height: 1.65
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-top: 44px
+    }
+
+    @media (min-width: 860px) {
+      .two {
+        grid-template-columns: repeat(2, 1fr)
+      }
+    }
+
+    .box {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 26px
+    }
+
+    .box p {
+      font-size: 14px;
+      color: var(--faint);
+      line-height: 1.7
+    }
+
+    .box p+p {
+      margin-top: 12px
+    }
+
+    .box b {
+      color: var(--dim);
+      font-weight: 500
+    }
+
+    table.t {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      margin-top: 6px
+    }
+
+    table.t th,
+    table.t td {
+      text-align: left;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line)
+    }
+
+    table.t th {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .1em;
+      color: var(--faint);
+      font-weight: 400
+    }
+
+    table.t td {
+      color: var(--dim)
+    }
+
+    table.t td:last-child {
+      text-align: right;
+      font-family: var(--mono);
+      color: var(--ink)
+    }
+
+    table.t tr:last-child td {
+      border-bottom: 0
+    }
+
+    .team {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 18px
+    }
+
+    @media (min-width: 700px) {
+      .team {
+        grid-template-columns: repeat(3, 1fr)
+      }
+    }
+
+    .mem {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 18px
+    }
+
+    .mem-n {
+      font-weight: 600;
+      font-size: 14.5px
+    }
+
+    .mem-r {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--cyan);
+      margin-top: 4px
+    }
+
+    .mem-i {
+      font-size: 12.5px;
+      color: var(--faint);
+      margin-top: 8px
+    }
+
+    /* ── detection tool ───────────────────────────────────── */
+    .tool {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+      align-items: start
+    }
+
+    @media (min-width: 980px) {
+      .tool {
+        grid-template-columns: 360px minmax(0, 1fr)
+      }
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden
+    }
+
+    .card-h {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      color: var(--dim)
+    }
+
+    .card-b {
+      padding: 20px
+    }
+
+    .drop {
+      display: block;
+      cursor: pointer;
+      text-align: center;
+      border-radius: 12px;
+      border: 1.5px dashed var(--line-lit);
+      background: #0b1120;
+      padding: 38px 18px;
+      transition: .15s
+    }
+
+    .drop:hover,
+    .drop.over {
+      border-color: var(--cyan);
+      background: #0d1626
+    }
+
+    .drop input {
+      display: none
+    }
+
+    .drop-main {
+      font-size: 14.5px;
+      margin-top: 12px
+    }
+
+    .drop-sub {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--faint);
+      margin-top: 6px
+    }
+
+    #chosen {
+      display: none;
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(34, 211, 238, .07);
+      border: 1px solid rgba(34, 211, 238, .2);
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--cyan);
+      word-break: break-all;
+      text-align: left
+    }
+
+    #go {
+      width: 100%;
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 10px;
+      border: 0;
+      font-family: inherit;
+      font-size: 14.5px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--cyan);
+      color: #04202a;
+      transition: .15s
+    }
+
+    #go:hover:not(:disabled) {
+      background: #67e8f9
+    }
+
+    #go:disabled {
+      background: #1b2536;
+      color: var(--faint);
+      cursor: default
+    }
+
+    .spec {
+      font-family: var(--mono);
+      font-size: 12px
+    }
+
+    .spec>div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .spec>div:last-child {
+      border-bottom: 0
+    }
+
+    .spec dt {
+      color: var(--faint)
+    }
+
+    .spec dd {
+      color: var(--dim)
+    }
+
+    .spec dd b {
+      color: var(--ink);
+      font-weight: 500
+    }
+
+    .idle,
+    .prog {
+      padding: clamp(56px, 10vw, 108px) 24px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .1em;
+      color: var(--faint)
+    }
+
+    .prog {
+      display: none
+    }
+
+    .scan {
+      width: 170px;
+      height: 2px;
+      margin: 0 auto 20px;
+      background: var(--line);
+      position: relative;
+      overflow: hidden
+    }
+
+    .scan::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      width: 38%;
+      background: var(--cyan);
+      animation: sweep 1.15s ease-in-out infinite
+    }
+
+    @keyframes sweep {
+      0% {
+        left: -38%
+      }
+
+      100% {
+        left: 100%
+      }
+    }
+
+    #out {
+      display: none
+    }
+
+    .vrow {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 22px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .08em
+    }
+
+    .badge.real {
+      color: var(--real);
+      border-color: rgba(16, 185, 129, .4);
+      background: rgba(16, 185, 129, .09)
+    }
+
+    .badge.fake {
+      color: var(--fake);
+      border-color: rgba(244, 63, 94, .4);
+      background: rgba(244, 63, 94, .09)
+    }
+
+    .badge.unsure {
+      color: var(--warn);
+      border-color: rgba(245, 158, 11, .4);
+      background: rgba(245, 158, 11, .09)
+    }
+
+    .vtxt {
+      font-size: 13.5px;
+      color: var(--dim);
+      padding-top: 5px
+    }
+
+    .gauge {
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .gtrack {
+      height: 10px;
+      border-radius: 6px;
+      position: relative;
+      opacity: .38;
+      background: linear-gradient(90deg, var(--real), #a3a30f 46%, var(--warn) 50%, #d4553c 56%, var(--fake))
+    }
+
+    .needle {
+      position: absolute;
+      top: -6px;
+      bottom: -6px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--ink);
+      transform: translateX(-50%);
+      transition: left .55s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    .gends {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--faint)
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      border-bottom: 1px solid var(--line)
+    }
+
+    @media (min-width: 620px) {
+      .metrics {
+        grid-template-columns: repeat(4, 1fr)
+      }
+    }
+
+    .m {
+      padding: 16px 18px;
+      border-right: 1px solid var(--line)
+    }
+
+    .m:last-child {
+      border-right: 0
+    }
+
+    @media (max-width: 619px) {
+      .m:nth-child(2n) {
+        border-right: 0
+      }
+
+      .m:nth-child(-n+2) {
+        border-bottom: 1px solid var(--line)
+      }
+    }
+
+    .m-k {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      color: var(--faint);
+      margin-bottom: 7px
+    }
+
+    .m-v {
+      font-family: var(--mono);
+      font-size: 21px;
+      font-weight: 500
+    }
+
+    .m-v.sm {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--dim)
+    }
+
+    .sec2 {
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .sec2:last-child {
+      border-bottom: 0
+    }
+
+    .sec2-h {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: var(--faint);
+      margin-bottom: 13px
+    }
+
+    .ghost {
+      background: transparent;
+      border: 1px solid var(--line-lit);
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      padding: 6px 12px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: .15s
+    }
+
+    .ghost:hover:not(:disabled) {
+      border-color: var(--cyan);
+      color: var(--cyan)
+    }
+
+    .ghost.on {
+      background: var(--cyan);
+      color: #04202a;
+      border-color: var(--cyan)
+    }
+
+    .note {
+      font-size: 12px;
+      color: var(--faint);
+      margin-top: 11px;
+      line-height: 1.65
+    }
+
+    .thumbs {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+      gap: 8px
+    }
+
+    .th {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1.5px solid var(--line)
+    }
+
+    .th img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block
+    }
+
+    .th b {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 500;
+      text-align: center;
+      padding: 3px 0;
+      background: rgba(0, 0, 0, .72);
+      color: #fff
+    }
+
+    .th.f {
+      border-color: var(--fake)
+    }
+
+    .th.r {
+      border-color: var(--real)
+    }
+
+    .regions {
+      margin-top: 12px;
+      padding: 11px 14px;
+      border-radius: 8px;
+      background: rgba(34, 211, 238, .06);
+      border-left: 2px solid var(--cyan);
+      font-size: 13px;
+      color: var(--dim)
+    }
+
+    .regions b {
+      color: var(--cyan);
+      font-weight: 500
+    }
+
+    .spark {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 62px
+    }
+
+    .spark i {
+      flex: 1;
+      min-height: 2px;
+      border-radius: 2px 2px 0 0;
+      opacity: .9
+    }
+
+    .p {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      padding: 12px 0;
+      border-top: 1px solid var(--line)
+    }
+
+    .p:first-of-type {
+      border-top: 0;
+      padding-top: 0
+    }
+
+    .p-face {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 44px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1.5px solid var(--line)
+    }
+
+    .p-face img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block
+    }
+
+    .p-face.f {
+      border-color: var(--fake)
+    }
+
+    .p-face.r {
+      border-color: var(--real)
+    }
+
+    .p-b {
+      flex: 1;
+      min-width: 0
+    }
+
+    .p-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13.5px
+    }
+
+    .p-name {
+      font-weight: 500
+    }
+
+    .p-name em {
+      font-style: normal;
+      color: var(--faint);
+      font-size: 12px
+    }
+
+    .p-score {
+      font-family: var(--mono);
+      font-weight: 500
+    }
+
+    .p-meta {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--faint);
+      margin-top: 3px
+    }
+
+    .p-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--line);
+      margin-top: 7px;
+      overflow: hidden
+    }
+
+    .p-bar i {
+      display: block;
+      height: 100%
+    }
+
+    .real {
+      color: var(--real)
+    }
+
+    .fake {
+      color: var(--fake)
+    }
+
+    .unsure {
+      color: var(--warn)
+    }
+
+    .flag {
+      margin: 16px 22px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      background: rgba(245, 158, 11, .07);
+      border-left: 2px solid var(--warn);
+      color: var(--dim)
+    }
+
+    .err {
+      margin: 22px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      background: rgba(244, 63, 94, .07);
+      border-left: 2px solid var(--fake);
+      color: var(--ink)
+    }
+
+    .rep {
+      display: none;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-2)
+    }
+
+    .rep-t {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--cyan)
+    }
+
+    .rep-m {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--faint);
+      margin-top: 7px;
+      line-height: 1.75
+    }
+
+    #dl {
+      display: none;
+      margin-top: 16px
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 28px clamp(18px, 4vw, 44px);
+      font-size: 12.5px;
+      color: var(--faint);
+      text-align: center
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav>
+    <div class="logo" onclick="show('home')">Deep<span>Shield</span></div>
+    <div class="links" id="links">
+      <a data-v="home" class="on">Home</a>
+      <a data-v="about">About</a>
+      <a data-v="how">How it works</a>
+      <a data-v="detect">Detection</a>
+    </div>
+    <div class="nav-r"><button class="cta-sm" onclick="show('detect')">Start detection</button></div>
+    <button class="burger" id="burger" aria-label="Menu">☰</button>
+  </nav>
+
+  <main>
+
+    <!-- ══ HOME ══ -->
+    <div class="view on" id="v-home">
+      <div class="hero">
+        <div class="hero-in">
+          <div>
+            <div class="pill"><i></i> CLIP ViT-L/14 · FaceForensics++</div>
+            <h1>Protect the <em>Truth</em><br>Detect the <em>Fake</em></h1>
+            <p class="lede">AI-powered deepfake detection that analyses faces frame by frame,
+              scores every person in the video, and shows you the visual evidence behind each verdict.</p>
+            <div class="btns">
+              <button class="btn-1" onclick="show('detect')">Start detection</button>
+              <button class="btn-2" onclick="show('how')">How it works</button>
+            </div>
+            <div class="kpis">
+              <div>
+                <div class="kpi-n">0.942</div>
+                <div class="kpi-l">Cross-dataset AUC</div>
+              </div>
+              <div>
+                <div class="kpi-n">0.988</div>
+                <div class="kpi-l">In-dataset AUC</div>
+              </div>
+              <div>
+                <div class="kpi-n">32</div>
+                <div class="kpi-l">Frames per scan</div>
+              </div>
+            </div>
+          </div>
+          <div class="art">
+            <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" role="img"
+              aria-label="Abstract face mesh with scanning analysis grid">
+              <defs>
+                <radialGradient id="glow" cx="50%" cy="45%" r="55%">
+                  <stop offset="0%" stop-color="#22d3ee" stop-opacity=".22" />
+                  <stop offset="100%" stop-color="#22d3ee" stop-opacity="0" />
+                </radialGradient>
+                <linearGradient id="ln" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#22d3ee" stop-opacity=".85" />
+                  <stop offset="100%" stop-color="#0ea5b7" stop-opacity=".25" />
+                </linearGradient>
+              </defs>
+              <circle cx="200" cy="190" r="165" fill="url(#glow)" />
+              <circle cx="200" cy="190" r="150" fill="none" stroke="#1f2a3d" />
+              <circle cx="200" cy="190" r="118" fill="none" stroke="#1f2a3d" />
+              <path
+                d="M200 78c-46 0-78 32-78 78 0 34 6 62 20 86 14 25 34 44 58 44s44-19 58-44c14-24 20-52 20-86 0-46-32-78-78-78z"
+                fill="none" stroke="url(#ln)" stroke-width="1.6" />
+              <path d="M136 150h128M146 190h108M158 232h84M172 268h56M200 96v192" stroke="#22d3ee" stroke-width=".7"
+                stroke-opacity=".3" />
+              <path d="M160 140q22-12 44 0M196 140q22-12 44 0" fill="none" stroke="#22d3ee" stroke-width="1.4"
+                stroke-opacity=".75" />
+              <path d="M200 168v34l-14 8" fill="none" stroke="#22d3ee" stroke-width="1.4" stroke-opacity=".6" />
+              <path d="M174 244q26 16 52 0" fill="none" stroke="#22d3ee" stroke-width="1.4" stroke-opacity=".75" />
+              <g fill="#22d3ee">
+                <circle cx="170" cy="146" r="3.2" />
+                <circle cx="230" cy="146" r="3.2" />
+                <circle cx="200" cy="204" r="2.6" />
+                <circle cx="176" cy="246" r="2.6" />
+                <circle cx="224" cy="246" r="2.6" />
+                <circle cx="200" cy="278" r="2.6" />
+                <circle cx="146" cy="190" r="2.2" fill-opacity=".55" />
+                <circle cx="254" cy="190" r="2.2" fill-opacity=".55" />
+                <circle cx="152" cy="128" r="2.2" fill-opacity=".55" />
+                <circle cx="248" cy="128" r="2.2" fill-opacity=".55" />
+              </g>
+              <path d="M170 146l30 58 24 42-48 0-6-100z" fill="none" stroke="#22d3ee" stroke-width=".6"
+                stroke-opacity=".35" />
+              <path d="M230 146l-30 58 24 42" fill="none" stroke="#22d3ee" stroke-width=".6" stroke-opacity=".35" />
+              <g stroke="#22d3ee" stroke-width="2" fill="none" stroke-opacity=".9">
+                <path d="M96 106V88h18M304 106V88h-18M96 274v18h18M304 274v18h-18" />
+              </g>
+              <rect x="96" y="186" width="208" height="1.5" fill="#22d3ee" opacity=".65">
+                <animate attributeName="y" values="90;286;90" dur="4.2s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values=".2;.75;.2" dur="4.2s" repeatCount="indefinite" />
+              </rect>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ABOUT ══ -->
+    <div class="view" id="v-about">
+      <div class="page">
+        <div class="page-in">
+          <div class="eyebrow">ABOUT</div>
+          <h2>An indigenous detection capability</h2>
+          <p class="sec-lede">DeepShield is a final year project built at Mehran University of
+            Engineering and Technology. It detects face-swap and face-reenactment forgeries in
+            video, and reports how confident it is rather than forcing a binary answer.</p>
+
+          <div class="two">
+            <div class="box">
+              <h3>Why it exists</h3>
+              <p>Synthetic video is now convincing enough to fabricate a public statement, impersonate
+                an official, or manufacture evidence. Existing detection tools are foreign and closed:
+                they cannot be audited, cannot be trusted with sensitive material, and are not
+                maintained against locally relevant threats.</p>
+              <p>A detector that can be inspected, retrained and run offline is a different kind of
+                asset. That is what this project set out to build.</p>
+            </div>
+            <div class="box">
+              <h3>What makes it work</h3>
+              <p>The backbone is CLIP ViT-L/14. Rather than retraining the whole network, only its
+                LayerNorm parameters are updated — <b>103,169 of 303 million weights</b>.</p>
+              <p>This matters more than it sounds. Full fine-tuning teaches a model the specific
+                artefacts of its training set, and it then collapses on forgeries made by any other
+                tool. Preserving the pretrained representation is what keeps cross-dataset accuracy
+                at 0.942 where CNN baselines typically fall to around 0.65.</p>
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="box">
+              <h3>Measured results</h3>
+              <table class="t">
+                <tr>
+                  <th>EVALUATION</th>
+                  <th style="text-align:right">RESULT</th>
+                </tr>
+                <tr>
+                  <td>FaceForensics++ test split (in-dataset)</td>
+                  <td>0.988 AUC</td>
+                </tr>
+                <tr>
+                  <td>Celeb-DF v2, official 518-video list</td>
+                  <td class="real">0.942 AUC</td>
+                </tr>
+                <tr>
+                  <td>JPEG quality 60</td>
+                  <td>0.937 AUC</td>
+                </tr>
+                <tr>
+                  <td>JPEG quality 30</td>
+                  <td>0.878 AUC</td>
+                </tr>
+                <tr>
+                  <td>JPEG quality 10</td>
+                  <td>0.670 AUC</td>
+                </tr>
+              </table>
+              <p style="margin-top:14px;font-size:13px;color:var(--faint)">The cross-dataset figure is
+                the one that matters — it measures forgeries the model has never encountered.</p>
+            </div>
+            <div class="box">
+              <h3>Project team</h3>
+              <p>Supervised by Dr. Amirita Dewani, Assistant Professor, Department of Software
+                Engineering, MUET Jamshoro.</p>
+              <div class="team">
+                <div class="mem">
+                  <div class="mem-n">Asfand Ali</div>
+                  <div class="mem-r">22SW041</div>
+                  <div class="mem-i">Model architecture, training and evaluation</div>
+                </div>
+                <div class="mem">
+                  <div class="mem-n">Jai Kumar</div>
+                  <div class="mem-r">22SW044</div>
+                  <div class="mem-i">Inference pipeline, web application, deployment</div>
+                </div>
+                <div class="mem">
+                  <div class="mem-n">Zarawar Khan</div>
+                  <div class="mem-r">22SW120</div>
+                  <div class="mem-i">Dataset engineering, benchmarking, robustness testing</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HOW IT WORKS ══ -->
+    <div class="view" id="v-how">
+      <div class="page">
+        <div class="page-in">
+          <div class="eyebrow">HOW IT WORKS</div>
+          <h2>Four stages, one verdict</h2>
+          <p class="sec-lede">Every upload runs the same pipeline that produced our published
+            benchmark results — no shortcuts between evaluation and deployment.</p>
+
+          <div class="steps">
+            <div class="step">
+              <div class="step-n">01</div>
+              <h3>Sample</h3>
+              <p>Up to 32 frames are drawn evenly across the clip, so the whole timeline is covered
+                rather than just the opening seconds.</p>
+            </div>
+            <div class="step">
+              <div class="step-n">02</div>
+              <h3>Isolate</h3>
+              <p>Every visible face is detected, rotated so the eyes sit level, and cropped with a
+                1.3× margin — the region where forgery artefacts concentrate.</p>
+            </div>
+            <div class="step">
+              <div class="step-n">03</div>
+              <h3>Classify</h3>
+              <p>A CLIP ViT-L/14 transformer scores each crop. Only its LayerNorm weights were tuned,
+                preserving the representation that lets it generalise.</p>
+            </div>
+            <div class="step">
+              <div class="step-n">04</div>
+              <h3>Explain</h3>
+              <p>Attention rollout reveals which facial regions carried the decision, so the verdict
+                arrives with evidence rather than a bare number.</p>
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="box">
+              <h3>Several faces, one answer</h3>
+              <p>Faces are matched between frames by identity embedding, so each person in a video is
+                tracked and scored separately.</p>
+              <p>The headline verdict comes from <b>the most suspicious person</b>, not an average.
+                A single manipulated face in an otherwise authentic scene still makes the video
+                manipulated, and averaging across people would hide exactly that case.</p>
+            </div>
+            <div class="box">
+              <h3>When the model is unsure</h3>
+              <p>A score near 50% means the model could not decide — not that the video is halfway
+                real. Those results are labelled <b>inconclusive</b> rather than forced into a verdict.</p>
+              <p>The interface also reports the full frame-score range, so you can see when the model
+                disagreed with itself across the video instead of reading one averaged number as
+                settled fact.</p>
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="box">
+              <h3>Compression is a real limit</h3>
+              <p>Video re-encodes every time it is shared. We measured what that costs: accuracy holds
+                near 0.937 down to JPEG quality 60, falls to 0.878 at quality 30, and reaches 0.670 at
+                quality 10.</p>
+              <p>The app estimates compression from bitrate and warns you when an upload falls into the
+                range where the result should not be trusted.</p>
+            </div>
+            <div class="box">
+              <h3>What it cannot do</h3>
+              <p>The model was trained on face-swap and face-reenactment forgeries. Fully synthetic
+                video from newer generative models is a different problem and may pass as real.</p>
+              <p>Face tracking uses identity embeddings and can still confuse people who cross paths on
+                screen. Attention maps are a noisy proxy for attribution. <b>This is a research
+                  prototype, not forensic evidence.</b></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DETECTION ══ -->
+    <div class="view" id="v-detect">
+      <div class="page">
+        <div class="page-in">
+          <div class="eyebrow">DETECTION</div>
+          <h2>Analyse a video</h2>
+          <p class="sec-lede">Upload a clip with a visible face. Analysis runs locally and nothing is
+            retained after the result is returned.</p>
+
+          <div class="tool">
+            <div>
+              <div class="card">
+                <div class="card-h"><span>UPLOAD</span></div>
+                <div class="card-b">
+                  <label class="drop" id="drop">
+                    <input type="file" id="file" accept="video/*">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.4"
+                      stroke-linecap="round" style="opacity:.75">
+                      <path d="M12 16V4m0 0L7 9m5-5l5 5" />
+                      <path d="M20 16v3a2 2 0 01-2 2H6a2 2 0 01-2-2v-3" />
+                    </svg>
+                    <div class="drop-main">Drop a video or click to browse</div>
+                    <div class="drop-sub">MP4 · MOV · AVI · MKV · WEBM — max 200 MB</div>
+                    <div id="chosen"></div>
+                  </label>
+                  <button id="go" disabled>Run analysis</button>
+                </div>
+              </div>
+
+              <div class="card" style="margin-top:20px">
+                <div class="card-h"><span>MODEL</span></div>
+                <div class="card-b spec">
+                  <div>
+                    <dt>BACKBONE</dt>
+                    <dd><b>CLIP ViT-L/14</b></dd>
+                  </div>
+                  <div>
+                    <dt>TUNING</dt>
+                    <dd>LayerNorm · <b>103K</b></dd>
+                  </div>
+                  <div>
+                    <dt>TRAINED ON</dt>
+                    <dd>FF++ c23</dd>
+                  </div>
+                  <div>
+                    <dt>IN-DATASET</dt>
+                    <dd><b>0.988</b> AUC</dd>
+                  </div>
+                  <div>
+                    <dt>CROSS-DATASET</dt>
+                    <dd class="real"><b>0.942</b> AUC</dd>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="card">
+                <div class="card-h"><span>RESULT</span><span id="tag" style="color:var(--faint)">NO SIGNAL</span></div>
+                <div class="idle" id="idle">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"
+                    stroke-linecap="round" style="opacity:.3;margin-bottom:16px">
+                    <path d="M3 12h4l3 8 4-16 3 8h4" />
+                  </svg>
+                  <div>AWAITING INPUT</div>
+                </div>
+                <div class="prog" id="prog">
+                  <div class="scan"></div>
+                  <div id="prog-txt">INITIALISING</div>
+                </div>
+                <div id="out"></div>
+              </div>
+              <button class="ghost" id="dl">↓ Export report</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer>DeepShield · Final Year Project · Department of Software Engineering, MUET Jamshoro</footer>
+
+  <script>
+    /* ── view routing ─────────────────────────────────────── */
+    function show(v) {
+      document.querySelectorAll(".view").forEach(e => e.classList.remove("on"));
+      document.getElementById("v-" + v).classList.add("on");
+      document.querySelectorAll(".links a").forEach(a =>
+        a.classList.toggle("on", a.dataset.v === v));
+      document.getElementById("links").classList.remove("open");
+      window.scrollTo({ top: 0, behavior: "instant" });
+      history.replaceState(null, "", "#" + v);
+    }
+    document.querySelectorAll(".links a").forEach(a =>
+      a.onclick = () => show(a.dataset.v));
+    document.getElementById("burger").onclick = () =>
+      document.getElementById("links").classList.toggle("open");
+    if (location.hash && document.getElementById("v" + location.hash))
+      show(location.hash.slice(1));
+
+    /* ── detection ────────────────────────────────────────── */
+    const drop = document.getElementById("drop"), file = document.getElementById("file"),
+      go = document.getElementById("go"), out = document.getElementById("out"),
+      prog = document.getElementById("prog"), progTxt = document.getElementById("prog-txt"),
+      chosen = document.getElementById("chosen"), idle = document.getElementById("idle"),
+      dl = document.getElementById("dl"), tag = document.getElementById("tag");
+
+    const wide = () => window.matchMedia("(min-width:980px)").matches;
+    let currentName = "", lastThumbs = [], heatOn = false;
+
+    file.onchange = () => {
+      const f = file.files[0]; if (!f) return;
+      currentName = f.name;
+      chosen.textContent = f.name + "  ·  " + (f.size / 1048576).toFixed(1) + " MB";
+      chosen.style.display = "block"; go.disabled = false;
+    };
+
+    ["dragover", "dragleave", "drop"].forEach(e =>
+      drop.addEventListener(e, ev => {
+        ev.preventDefault();
+        drop.classList.toggle("over", e === "dragover");
+        if (e === "drop") { file.files = ev.dataTransfer.files; file.onchange(); }
+      })
+    );
+
+    const steps = ["READING CONTAINER", "DETECTING FACES", "TRACKING SUBJECTS",
+      "RUNNING CLASSIFIER", "MAPPING ATTENTION"];
+
+    go.onclick = async () => {
+      go.disabled = true; dl.style.display = "none";
+      out.style.display = "none"; idle.style.display = "none";
+      prog.style.display = "block"; tag.textContent = "RUNNING";
+      let i = 0; progTxt.textContent = steps[0];
+      const tick = setInterval(() => { progTxt.textContent = steps[++i % steps.length] }, 2600);
+      const fd = new FormData(); fd.append("video", file.files[0]);
+      try {
+        const r = await fetch("/analyse", { method: "POST", body: fd });
+        render(await r.json());
+      } catch (e) {
+        out.style.display = "block";
+        out.innerHTML = '<div class="err">Request failed — ' + e.message + '</div>';
+        tag.textContent = "ERROR";
+      }
+      clearInterval(tick); prog.style.display = "none"; go.disabled = false;
+    };
+
+    function thumbHtml(t) {
+      const src = (heatOn && t.heat) ? t.heat : t.img;
+      return '<div class="th ' + (t.score > .5 ? "f" : "r") + '"><img src="' + src +
+        '" alt="analysed face"><b>' + (t.score * 100).toFixed(0) + '%</b></div>';
+    }
+    function paintThumbs() {
+      const b = document.getElementById("thumbs");
+      if (b) b.innerHTML = lastThumbs.map(thumbHtml).join("");
+      const k = document.getElementById("heat-btn");
+      if (k) { k.classList.toggle("on", heatOn); k.textContent = heatOn ? "HEATMAP ON" : "HEATMAP OFF"; }
+    }
+    function esc(s) {
+      return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    }
+
+    function render(d) {
+      out.style.display = "block";
+      if (d.error) { out.innerHTML = '<div class="err">' + d.error + '</div>'; tag.textContent = "NO FACE"; return; }
+
+      const pct = d.score * 100, unsure = Math.abs(pct - 50) < 10;
+      const cls = unsure ? "unsure" : (d.score > .5 ? "fake" : "real");
+      const label = unsure ? "INCONCLUSIVE" : (d.score > .5 ? "LIKELY FAKE" : "LIKELY AUTHENTIC");
+      const many = (d.faces_found || 1) > 1;
+      tag.textContent = label;
+
+      let sub;
+      if (unsure) sub = "Score sits close to the decision boundary. This result should not be relied on.";
+      else if (d.score > .5) sub = many ? "One subject shows frame patterns consistent with facial manipulation."
+        : "Frame patterns are consistent with facial manipulation.";
+      else sub = many ? "No subject shows consistent signs of manipulation."
+        : "No consistent signs of facial manipulation were found.";
+
+      lastThumbs = d.thumbs || []; heatOn = false;
+      const hasHeat = lastThumbs.some(t => t.heat);
+      const bars = (d.per_frame || []).map(s =>
+        '<i style="height:' + (10 + s * 80) + '%;background:' +
+        (s > .5 ? "var(--fake)" : "var(--real)") + '"></i>').join("");
+      const pf = d.per_frame || [];
+      const range = pf.length ? (Math.min.apply(null, pf) * 100).toFixed(0) + '\u2013' +
+        (Math.max.apply(null, pf) * 100).toFixed(0) + '%' : "\u2014";
+
+      let regionHtml = "";
+      if (d.regions && d.regions.length) {
+        const L = d.regions.length === 1 ? d.regions[0]
+          : d.regions.slice(0, -1).join(", ") + " and " + d.regions[d.regions.length - 1];
+        regionHtml = '<div class="regions">Attention concentrated on the <b>' + L + '</b>.</div>';
+      }
+
+      let people = "";
+      if (many && d.people) {
+        people = '<div class="sec2"><div class="sec2-h"><span>SUBJECTS DETECTED — ' + d.faces_found + '</span></div>' +
+          d.people.map((p, i) => {
+            const pc = p.score * 100;
+            const c = Math.abs(pc - 50) < 10 ? "unsure" : (p.score > .5 ? "fake" : "real");
+            const f = (p.thumbs && p.thumbs[0]) ? p.thumbs[0].img : "";
+            return '<div class="p">' +
+              (f ? '<div class="p-face ' + (p.score > .5 ? "f" : "r") + '"><img src="' + f + '"></div>' : '') +
+              '<div class="p-b"><div class="p-top"><span class="p-name">Subject ' + (i + 1) +
+              (i === 0 ? ' <em>— drives verdict</em>' : '') + '</span><span class="p-score ' + c + '">' +
+              pc.toFixed(1) + '%</span></div><div class="p-meta">' + p.frames + ' FRAMES · PEAK ' +
+              (p.peak * 100).toFixed(0) + '%</div><div class="p-bar"><i style="width:' + pc.toFixed(1) +
+              '%;background:var(--' + (p.score > .5 ? "fake" : "real") + ')"></i></div></div></div>';
+          }).join("") +
+          '<div class="note">The highest-scoring subject sets the overall verdict. Faces are matched ' +
+          'between frames by identity embedding.</div></div>';
+      }
+
+      const stamp = new Date();
+      out.innerHTML = '<div id="card">' +
+        '<div class="rep" id="rep"><div class="rep-t">DeepShield — Forensic Analysis Report</div>' +
+        '<div class="rep-m">FILE&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' + esc(currentName || "\u2014") + '<br>' +
+        'ANALYSED&nbsp;' + stamp.toLocaleString() + '<br>' +
+        'MODEL&nbsp;&nbsp;&nbsp;&nbsp;CLIP ViT-L/14 · FF++ c23 · cross-dataset AUC 0.942 (Celeb-DF v2)</div></div>' +
+        '<div class="vrow"><div class="badge ' + cls + '">' + label + '</div>' +
+        '<div class="vtxt">' + sub + '</div></div>' +
+        '<div class="gauge"><div class="gtrack"><div class="needle" style="left:' + pct.toFixed(1) + '%"></div></div>' +
+        '<div class="gends"><span>AUTHENTIC 0%</span><span>MANIPULATED 100%</span></div></div>' +
+        '<div class="metrics">' +
+        '<div class="m"><div class="m-k">SCORE</div><div class="m-v ' + cls + '">' + pct.toFixed(1) + '%</div></div>' +
+        '<div class="m"><div class="m-k">' + (many ? 'SUBJECTS' : 'FRAMES') + '</div><div class="m-v">' +
+        (many ? d.faces_found : d.frames_analysed) + '</div></div>' +
+        '<div class="m"><div class="m-k">FRAME RANGE</div><div class="m-v" style="font-size:16px">' + range + '</div></div>' +
+        '<div class="m"><div class="m-k">SOURCE</div><div class="m-v sm">' + (d.resolution || "\u2014") + '<br>' +
+        (d.duration != null ? d.duration + "s" : "") + '</div></div></div>' +
+        people +
+        (lastThumbs.length ? '<div class="sec2"><div class="sec2-h"><span>' +
+          (many ? 'KEY FRAMES — LEAD SUBJECT' : 'ANALYSED FACE CROPS') + '</span>' +
+          (hasHeat ? '<button class="ghost" id="heat-btn">HEATMAP OFF</button>' : '') +
+          '</div><div class="thumbs" id="thumbs">' + lastThumbs.map(thumbHtml).join("") + '</div>' +
+          '<div class="note">Frames that most influenced the verdict. Each percentage is that frame&rsquo;s own score.' +
+          (hasHeat ? ' Enable the heatmap to see which facial regions carried most weight.' : '') +
+          '</div>' + regionHtml + '</div>' : '') +
+        (bars ? '<div class="sec2"><div class="sec2-h"><span>PER-FRAME SCORES</span></div>' +
+          '<div class="spark">' + bars + '</div><div class="note">Each bar is one frame. Taller and red ' +
+          'means more manipulated. A wide frame range means the model disagreed with itself.</div></div>' : '') +
+        (d.early_stop ? '<div class="flag">Early stop — the first 8 frames agreed strongly. Scoring the ' +
+          'remaining frames would not have changed the verdict.</div>' : '') +
+        (d.warning ? '<div class="flag">' + d.warning + '</div>' : '') + '</div>';
+
+      const hb = document.getElementById("heat-btn");
+      if (hb) hb.onclick = () => { heatOn = !heatOn; paintThumbs(); };
+      dl.style.display = "block";
+      if (!wide()) out.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    dl.onclick = async () => {
+      const card = document.getElementById("card"), rep = document.getElementById("rep");
+      if (!card) return;
+      dl.disabled = true; dl.textContent = "GENERATING…"; rep.style.display = "block";
+      try {
+        const canvas = await html2canvas(card, {
+          backgroundColor: "#111827", scale: 2, useCORS: true, logging: false,
+          height: card.scrollHeight + 24, windowHeight: card.scrollHeight + 100
+        });
+        const n = (currentName || "video").replace(/\.[^.]+$/, "").replace(/[^a-z0-9_-]/gi, "_");
+        const a = document.createElement("a");
+        a.download = "deepshield-report-" + n + ".png";
+        a.href = canvas.toDataURL("image/png"); a.click();
+      } catch (err) { alert("Could not generate the report: " + err.message); }
+      rep.style.display = "none"; dl.disabled = false; dl.textContent = "↓ Export report";
+    };
+  </script>
+</body>
+
+</html>
