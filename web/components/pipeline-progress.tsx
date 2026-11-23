@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import clsx from "clsx";
+import { useReducedMotion } from "motion/react";
 
-const STAGES = [
+const VIDEO_STAGES = [
   "Reading container",
   "Detecting faces",
   "Tracking subjects",
@@ -17,28 +18,46 @@ const STAGES = [
  * measured percentage. It advances on a timer and holds on the last
  * stage rather than pretending to complete.
  */
-export function PipelineProgress() {
+export function PipelineProgress({
+  stages = VIDEO_STAGES,
+  stepMs = 2600,
+  note = (
+    <>
+      On CPU a 30-second clip typically takes 20–60 seconds. Stages are
+      indicative — the server reports once the full pipeline finishes.
+    </>
+  ),
+}: {
+  stages?: string[];
+  stepMs?: number;
+  note?: ReactNode;
+} = {}) {
   const [stage, setStage] = useState(0);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     const id = setInterval(
-      () => setStage((s) => Math.min(s + 1, STAGES.length - 1)),
-      2600,
+      () => setStage((s) => Math.min(s + 1, stages.length - 1)),
+      stepMs,
     );
     return () => clearInterval(id);
-  }, []);
+  }, [stages.length, stepMs]);
 
   return (
     <div className="px-1 py-6">
       <div className="relative mb-8 h-1 overflow-hidden rounded-full bg-raise-2">
         <div
           className="absolute inset-y-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-signal to-transparent"
-          style={{ animation: "shimmer 1.6s ease-in-out infinite" }}
+          style={
+            reduced
+              ? { left: "33%" }
+              : { animation: "shimmer 1.6s ease-in-out infinite" }
+          }
         />
       </div>
 
       <ol className="space-y-3">
-        {STAGES.map((label, i) => {
+        {stages.map((label, i) => {
           const done = i < stage;
           const active = i === stage;
           return (
@@ -56,7 +75,12 @@ export function PipelineProgress() {
                     <path d="M4 12.5l5.5 5.5L20 6.5" />
                   </svg>
                 ) : active ? (
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-signal" />
+                  <span
+                    className={clsx(
+                      "h-1.5 w-1.5 rounded-full bg-signal",
+                      !reduced && "animate-pulse",
+                    )}
+                  />
                 ) : null}
               </span>
               <span
@@ -72,10 +96,7 @@ export function PipelineProgress() {
         })}
       </ol>
 
-      <p className="mt-7 text-[12.5px] leading-relaxed text-bone-3">
-        On CPU a 30-second clip typically takes 20–60 seconds. Stages are
-        indicative — the server reports once the full pipeline finishes.
-      </p>
+      <p className="mt-7 text-[12.5px] leading-relaxed text-bone-3">{note}</p>
     </div>
   );
 }

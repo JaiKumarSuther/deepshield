@@ -4,14 +4,31 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { ACCEPTED_EXTENSIONS, validateFile } from "@/lib/api";
 
+const VIDEO_HINT = "MP4 · MOV · AVI · MKV · WEBM — max 200 MB";
+
+/**
+ * File picker shared by both detectors. Every prop past `disabled`
+ * defaults to the video workbench's behaviour, so that page passes none.
+ */
 export function Dropzone({
   file,
   onSelect,
   disabled,
+  kind = "video",
+  accept = ACCEPTED_EXTENSIONS,
+  validate = validateFile,
+  label = "Drop a video, or click to browse",
+  hint = VIDEO_HINT,
 }: {
   file: File | null;
   onSelect: (file: File | null) => void;
   disabled?: boolean;
+  /** Video files get a poster-frame thumbnail; audio gets an icon tile. */
+  kind?: "video" | "audio";
+  accept?: string[];
+  validate?: (file: File) => string | null;
+  label?: string;
+  hint?: string;
 }) {
   const [over, setOver] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -21,7 +38,7 @@ export function Dropzone({
 
   // Object URLs leak if they outlive the file they point at.
   useEffect(() => {
-    if (!file) {
+    if (!file || kind !== "video") {
       setPreview(null);
       setMeta(null);
       return;
@@ -29,16 +46,16 @@ export function Dropzone({
     const url = URL.createObjectURL(file);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
-  }, [file]);
+  }, [file, kind]);
 
-  const accept = useCallback(
+  const choose = useCallback(
     (picked: File | null) => {
       setProblem(null);
       if (!picked) {
         onSelect(null);
         return;
       }
-      const issue = validateFile(picked);
+      const issue = validate(picked);
       if (issue) {
         setProblem(issue);
         onSelect(null);
@@ -46,7 +63,7 @@ export function Dropzone({
       }
       onSelect(picked);
     },
-    [onSelect],
+    [onSelect, validate],
   );
 
   return (
@@ -61,7 +78,7 @@ export function Dropzone({
           e.preventDefault();
           setOver(false);
           if (disabled) return;
-          accept(e.dataTransfer.files?.[0] ?? null);
+          choose(e.dataTransfer.files?.[0] ?? null);
         }}
         className={clsx(
           "relative flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-5 py-9 text-center transition-all",
@@ -74,10 +91,10 @@ export function Dropzone({
         <input
           ref={inputRef}
           type="file"
-          accept={ACCEPTED_EXTENSIONS.join(",")}
+          accept={accept.join(",")}
           className="sr-only"
           disabled={disabled}
-          onChange={(e) => accept(e.target.files?.[0] ?? null)}
+          onChange={(e) => choose(e.target.files?.[0] ?? null)}
         />
 
         <svg
@@ -97,11 +114,9 @@ export function Dropzone({
         </svg>
 
         <div className="mt-3.5 text-[14.5px] font-medium">
-          {over ? "Release to load" : "Drop a video, or click to browse"}
+          {over ? "Release to load" : label}
         </div>
-        <div className="mono-label mt-2">
-          MP4 · MOV · AVI · MKV · WEBM — max 200 MB
-        </div>
+        <div className="mono-label mt-2">{hint}</div>
       </label>
 
       {problem && (
@@ -112,6 +127,38 @@ export function Dropzone({
           </svg>
           {problem}
         </p>
+      )}
+
+      {file && kind === "audio" && (
+        <div className="mt-4 flex items-center gap-3.5 rounded-xl border border-hair bg-raise p-3">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-void text-signal">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+              <path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2" />
+            </svg>
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13.5px] font-medium" title={file.name}>
+              {file.name}
+            </div>
+            <div className="mono-label mt-1">
+              {(file.size / 1024 / 1024).toFixed(1)} MB
+            </div>
+          </div>
+          {!disabled && (
+            <button
+              onClick={() => {
+                choose(null);
+                if (inputRef.current) inputRef.current.value = "";
+              }}
+              aria-label="Remove selected audio"
+              className="shrink-0 rounded-lg p-1.5 text-bone-3 transition-colors hover:bg-raise-2 hover:text-bone"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          )}
+        </div>
       )}
 
       {file && preview && (
@@ -151,7 +198,7 @@ export function Dropzone({
           {!disabled && (
             <button
               onClick={() => {
-                accept(null);
+                choose(null);
                 if (inputRef.current) inputRef.current.value = "";
               }}
               aria-label="Remove selected video"

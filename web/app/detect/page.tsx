@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { DetectWorkbench } from "@/components/detect-workbench";
+import { DetectChooser } from "@/components/detect-chooser";
 import { PageHeader } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "Detect — DeepShield",
   description:
-    "Upload a video and get a per-face authenticity verdict with attention heatmaps and a per-frame score breakdown.",
+    "Choose a detector: face manipulation in video, or synthetic and cloned speech in audio.",
 };
 
 export default function DetectPage() {
@@ -15,12 +15,12 @@ export default function DetectPage() {
         label="Detection"
         title={
           <>
-            Analyse a <span className="display-i">video</span>.
+            What are you <span className="display-i">checking</span>?
           </>
         }
-        lede="Upload a clip with a visible face. Analysis runs locally and nothing is retained after the result is returned."
+        lede="DeepShield runs two independent detectors, each with its own model and its own limits. Pick the one that matches your evidence."
       />
-      <DetectWorkbench />
+      <DetectChooser />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { FrameTimeline } from "@/components/frame-timeline";
 import { SubjectList } from "@/components/subject-list";
 import { VerdictMeter } from "@/components/verdict-meter";
 import { Callout } from "@/components/ui";
+import { VoiceTrackCard } from "@/components/voice-track-card";
 import type { AnalysisResult } from "@/lib/types";
 
 export function ResultPanel({
@@ -130,6 +131,9 @@ export function ResultPanel({
               <FrameTimeline scores={frames} />
             </div>
           )}
+
+          {/* Older servers omit `audio`; null means no audio track. */}
+          {result.audio && <VoiceTrackCard audio={result.audio} />}
 
           {(result.early_stop || result.warning) && (
             <div className="space-y-3">

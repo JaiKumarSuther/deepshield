@@ -1,7 +1,32 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { classify, VERDICT_COLOR, VERDICT_LABEL } from "@/lib/types";
+import {
+  classify,
+  VERDICT_COLOR,
+  VERDICT_LABEL,
+  type Verdict,
+} from "@/lib/types";
+
+/** Wording around the meter; the thresholds and colours never change. */
+export interface MeterCopy {
+  labels: Record<Verdict, string>;
+  notes: Record<Verdict, string>;
+  scoreLabel: string;
+  scale: [low: string, high: string];
+}
+
+const VIDEO_COPY: MeterCopy = {
+  labels: VERDICT_LABEL,
+  notes: {
+    inconclusive:
+      "The score sits close to the decision boundary. This result should not be relied on.",
+    manipulated: "Frame patterns are consistent with facial manipulation.",
+    authentic: "No consistent signs of facial manipulation were found.",
+  },
+  scoreLabel: "Manipulation score",
+  scale: ["0 · Authentic", "100 · Manipulated"],
+};
 
 /**
  * The headline figure plus its position on the decision scale.
@@ -11,7 +36,13 @@ import { classify, VERDICT_COLOR, VERDICT_LABEL } from "@/lib/types";
  * cleared the boundary comfortably or barely, which a bare percentage
  * hides completely.
  */
-export function VerdictMeter({ score }: { score: number }) {
+export function VerdictMeter({
+  score,
+  copy = VIDEO_COPY,
+}: {
+  score: number;
+  copy?: MeterCopy;
+}) {
   const reduced = useReducedMotion();
   const verdict = classify(score);
   const pct = score * 100;
@@ -27,15 +58,11 @@ export function VerdictMeter({ score }: { score: number }) {
               className="text-[15px] font-semibold tracking-tight"
               style={{ color: colour }}
             >
-              {VERDICT_LABEL[verdict]}
+              {copy.labels[verdict]}
             </span>
           </div>
           <p className="mt-2 max-w-md text-[13.5px] leading-relaxed text-bone-2">
-            {verdict === "inconclusive"
-              ? "The score sits close to the decision boundary. This result should not be relied on."
-              : verdict === "manipulated"
-                ? "Frame patterns are consistent with facial manipulation."
-                : "No consistent signs of facial manipulation were found."}
+            {copy.notes[verdict]}
           </p>
         </div>
 
@@ -48,7 +75,7 @@ export function VerdictMeter({ score }: { score: number }) {
             {pct.toFixed(1)}
             <span className="text-[26px] font-medium">%</span>
           </div>
-          <div className="mono-label mt-1.5">Manipulation score</div>
+          <div className="mono-label mt-1.5">{copy.scoreLabel}</div>
         </div>
       </div>
 
@@ -82,9 +109,9 @@ export function VerdictMeter({ score }: { score: number }) {
         </div>
 
         <div className="mono-label mt-3 flex justify-between">
-          <span>0 · Authentic</span>
+          <span>{copy.scale[0]}</span>
           <span className="text-neutral">Inconclusive</span>
-          <span>100 · Manipulated</span>
+          <span>{copy.scale[1]}</span>
         </div>
       </div>
     </div>

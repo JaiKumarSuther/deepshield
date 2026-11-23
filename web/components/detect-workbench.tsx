@@ -60,7 +60,10 @@ export function DetectWorkbench() {
   const running = status === "running";
 
   return (
-    <div className="mt-16 grid gap-5 lg:grid-cols-[380px_1fr] lg:items-start">
+    <div
+      className="enter mt-12 grid gap-5 lg:grid-cols-[380px_1fr] lg:items-start"
+      style={{ "--enter-delay": "120ms" } as React.CSSProperties}
+    >
       <div className="space-y-5 lg:sticky lg:top-24">
         <section className="panel">
           <header className="border-b border-hair px-5 py-4">
@@ -88,8 +91,8 @@ export function DetectWorkbench() {
             </div>
 
             <p className="mt-3.5 text-[12.5px] leading-relaxed text-bone-3">
-              Analysis runs on your own machine. The upload is deleted from disk
-              as soon as the result is returned.
+              Files are processed on the DeepShield server and deleted as soon
+              as the result is returned.
             </p>
           </div>
         </section>

@@ -39,6 +39,30 @@ export interface AnalysisResult {
   early_stop: boolean;
   elapsed: number;
   warning: string | null;
+  /**
+   * Voice-track verdict for the same clip. Optional until the backend
+   * ships it: absent on older servers, null when the video has no audio.
+   */
+  audio?: AudioResult | null;
+}
+
+/** One 4-second slice of the recording, on the same calibrated scale. */
+export interface AudioWindow {
+  start: number;
+  end: number;
+  score: number;
+}
+
+/** Mirrors the payload returned by `POST /analyse-audio`. */
+export interface AudioResult {
+  /** 0–1, calibrated so 0.5 is the decision boundary; above = AI-generated. */
+  score: number;
+  /** Seconds of audio analysed. */
+  duration: number;
+  windows: AudioWindow[];
+  elapsed: number;
+  model: string;
+  warning: string | null;
 }
 
 export type Verdict = "authentic" | "manipulated" | "inconclusive";
@@ -56,6 +80,13 @@ export function classify(score: number): Verdict {
 export const VERDICT_LABEL: Record<Verdict, string> = {
   authentic: "Likely authentic",
   manipulated: "Likely manipulated",
+  inconclusive: "Inconclusive",
+};
+
+/** Same thresholds as video (via classify), worded for speech. */
+export const AUDIO_VERDICT_LABEL: Record<Verdict, string> = {
+  authentic: "Likely human speech",
+  manipulated: "Likely AI-generated",
   inconclusive: "Inconclusive",
 };
 
