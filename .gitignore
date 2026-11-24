@@ -21,3 +21,11 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Audio model weights (download from the Kaggle notebook output)
+audio_model/
+*.safetensors
+
+# Selenium output (regenerated on every run)
+selenium_tests/report.html
+selenium_tests/screenshots/*.png

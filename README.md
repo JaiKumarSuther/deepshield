@@ -76,6 +76,12 @@ The following model files are **not** included in this repository because they a
 
 > **Note:** Without these files the application will not start. Make sure all three files are in the same directory as `app.py`.
 
+**Audio model (optional).** Audio authenticity needs the wav2vec2 weights from the
+[training notebook](https://www.kaggle.com/code/jaikumarsuthar/deepshield-audio-authenticity-v1)
+output (`deepshield_audio_w2v2/`: `config.json` + `model.safetensors`, ~380 MB) in
+`./audio_model/`, or wherever `AUDIO_MODEL_DIR` points, plus the `ffmpeg` binary on
+`PATH`. Without them the video detector still runs and `/analyse-audio` returns 503.
+
 ### 5. Build the frontend
 
 The UI is a Next.js + Tailwind app in `web/`. It compiles to a static bundle that
@@ -184,9 +190,43 @@ Notes on two fields that are easy to misread:
 - `thumbs` is a list of **objects**, not bare strings. `heat` is present only on
   the frames an attention map was generated for (`HEATMAP_COUNT`, default 2).
 
+`audio` holds the verdict for the video's own voice track (same shape as
+`POST /analyse-audio` below, at most 15 windows), or `null` when the clip has no
+audio, is silent, or the audio model is not installed.
+
 Errors return HTTP 400 with `{"error": "..."}`; an over-size upload returns 413
 with the same shape. The full response is typed in
 [`web/lib/types.ts`](web/lib/types.ts).
+
+### `POST /analyse-audio`
+
+Is the speech in a recording human or AI-generated?
+
+- Field: `audio` — `.wav .mp3 .m4a .aac .ogg .flac`, at most 50 MB
+- Decoded to 16 kHz mono with ffmpeg, scored in 4-second windows (silent
+  windows skipped, at most 45 spread across the recording)
+
+```bash
+curl -X POST -F "audio=@clip.wav" http://localhost:5000/analyse-audio
+```
+
+```json
+{
+  "score": 0.9554,
+  "duration": 9.0,
+  "windows": [{ "start": 0, "end": 4, "score": 0.95 }, "..."],
+  "elapsed": 1.2,
+  "model": "wav2vec2-base · FoR",
+  "warning": null
+}
+```
+
+`score` is the mean window probability of AI-generated speech; 0.5 is the
+decision boundary. On held-out Fake-or-Real test data the model rarely flags
+real speech (4 of ~3,200 clips) but misses about 40% of fakes from
+text-to-speech systems it was not trained on, so a low score is not proof
+that speech is human. Errors: 400 (unsupported, undecodable, no audio, silent),
+413 (over 50 MB), 503 (audio model not installed).
 
 ---
 

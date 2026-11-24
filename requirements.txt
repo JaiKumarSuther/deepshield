@@ -7,3 +7,6 @@ onnxruntime
 opencv-python-headless
 numpy
 pillow
+# Audio authenticity (wav2vec2). Also needs the ffmpeg binary on PATH.
+transformers>=4.40
+safetensors

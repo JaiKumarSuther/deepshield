@@ -7,6 +7,6 @@ export const AUDIO_MODEL_SPEC: ReadonlyArray<readonly [string, string]> = [
   ["Backbone", "wav2vec2-base"],
   ["Input", "16 kHz · 4 s windows"],
   ["Trained on", "Fake-or-Real (FoR)"],
-  ["Test AUC", "—"],
-  ["Re-recorded AUC", "—"],
+  ["Test AUC", "0.913"],
+  ["Re-recorded AUC", "0.945"],
 ];
